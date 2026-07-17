@@ -4,22 +4,27 @@ using UnityEngine;
 using UnityEngine.Networking;
 using System.Text;
 
+// Local'de (127.0.0.1:11434) çalışan Ollama API ile iletişimi kuran,
+// NPC modellerini oluşturan ve metin tabanlı sohbet isteklerini ileten yöneticidir.
 public class OllamaManager : MonoBehaviour
 {
     [Header("Ollama Server Settings")]
     [SerializeField] private string baseUrl = "http://localhost:11434/api";
-    [SerializeField] private string baseModel = "phi3";
+    [SerializeField] private string baseModel = "phi3"; // Kullanılacak temel LLM modeli
     [SerializeField] private float temperature = 0.1f;
-    [SerializeField] private int maxPredict = 12;
+    [SerializeField] private int maxPredict = 12; // Modelin üretebileceği maksimum kelime/token sayısı
 
     private int activeRequests = 0;
+    // Sunucuya o an gönderilen aktif bir istek olup olmadığını belirtir
     public bool IsThinking => activeRequests > 0;
 
+    // Ollama API'si üzerinden `/api/create` uç noktasına istek göndererek NPC'ye özel sistem yönergelerine sahip yeni bir model oluşturur.
     public IEnumerator CreateNPCModel(string npcModelName, string systemPrompt, Action<bool> onDone = null)
     {
         string safeModelName = SanitizeModelName(npcModelName);
         string safeSystemPrompt = EscapeJson(systemPrompt);
 
+        // JSON Payload yapısı
         string jsonPayload = "{"
             + "\"model\":\"" + safeModelName + "\","
             + "\"from\":\"" + baseModel + "\","
@@ -34,7 +39,7 @@ public class OllamaManager : MonoBehaviour
             request.uploadHandler = new UploadHandlerRaw(bodyRaw);
             request.downloadHandler = new DownloadHandlerBuffer();
             request.SetRequestHeader("Content-Type", "application/json");
-            request.timeout = 120;
+            request.timeout = 120; // Büyük modeller için uzun zaman aşımı süresi
 
             yield return request.SendWebRequest();
 
@@ -57,6 +62,7 @@ public class OllamaManager : MonoBehaviour
         SendMessageToNPC(npcModelName, playerMessage, onReply, temperature);
     }
 
+    // NPC modeline `/api/chat` uç noktası üzerinden mesaj gönderir ve cevabı geri döndürür.
     public void SendMessageToNPC(string npcModelName, string playerMessage, Action<string> onReply, float customTemp)
     {
         if (string.IsNullOrWhiteSpace(playerMessage))
@@ -66,8 +72,10 @@ public class OllamaManager : MonoBehaviour
         StartCoroutine(CallOllama(safeModelName, playerMessage, onReply, customTemp));
     }
 
+    // Arka planda Ollama sunucusuyla HTTP POST üzerinden haberleşen asenkron metot.
     private IEnumerator CallOllama(string modelName, string playerMessage, Action<string> onReply, float temp)
     {
+        // İstek verisi nesnesi
         OllamaChatRequest requestData = new OllamaChatRequest
         {
             model = modelName,
@@ -106,6 +114,7 @@ public class OllamaManager : MonoBehaviour
 
                 if (responseData != null && responseData.message != null)
                 {
+                    // Başarılı cevabı geri döndürür
                     onReply?.Invoke(responseData.message.content.Trim());
                 }
                 else
@@ -121,6 +130,7 @@ public class OllamaManager : MonoBehaviour
         activeRequests--;
     }
 
+    // Model isimlerinin sadece harf, sayı ve tire içermesini sağlayan temizleme fonksiyonu.
     public string SanitizeModelName(string rawName)
     {
         string clean = rawName.ToLower().Trim();
@@ -137,6 +147,7 @@ public class OllamaManager : MonoBehaviour
         return sb.ToString();
     }
 
+    // JSON string değerlerinde hata oluşturabilecek kaçış karakterlerini (escape characters) temizleyen fonksiyon.
     private string EscapeJson(string text)
     {
         return text

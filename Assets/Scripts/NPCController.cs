@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Linq;
 
 [RequireComponent(typeof(Rigidbody2D))]
+// NPC'lerin fiziksel hareketlerini, yapay zeka model kurulumlarını (Ollama), 
+// oyuncu ile olan diyalog etkileşimlerini ve anlık duygu durumlarını yöneten ana sınıftır.
 public class NPCController : MonoBehaviour
 {
     [Header("NPC Identity & AI")]
@@ -13,19 +15,23 @@ public class NPCController : MonoBehaviour
     public DialogueManager dialogueManager;
     private string modelId;
     private bool modelReady = false;
-    public bool isThinking { get; private set; } = false;
+    public bool isThinking { get; private set; } = false; // NPC'nin o an yapay zeka ile düşünüp düşünmediği durum
 
     [Header("AI Settings")]
-    public float aiTemperature = 0.3f;
+    public float aiTemperature = 0.3f; // Modelin yaratıcılık/rastgelelik katsayısı
 
     [Header("Personality & Memory")]
     public Personality personality = new Personality();
     public List<NPCMemory> memories = new List<NPCMemory>();
-    public int maxMemories = 50;
+    public int maxMemories = 50; // Karakterin aklında tutabileceği maksimum bellek sayısı
 
     [Header("Behavior & Movement")]
     public float moveSpeed = 2f;
-    public float detectionRange = 5f;
+    public float detectionRange = 5f; // Oyuncuyu algılama mesafesi
+
+    [Header("AI Speech Settings")]
+    public float speechCooldown = 8f; // İki konuşma arasındaki minimum bekleme süresi
+    private float lastSpeechTime = -999f;
     
     [Header("Emotion UI")]
     public SpriteRenderer emotionIcon;
@@ -48,9 +54,19 @@ public class NPCController : MonoBehaviour
             dialogueManager = GetComponentInChildren<DialogueManager>(true);
     }
 
+    // PlayerPrefs üzerinde kayıtlı olan OCEAN kişilik parametrelerini NPC adına göre yükler.
     private void LoadPersonalityFromPrefs()
     {
-        string safeName = npcName.Replace(" ", "_").Replace("-", "_");
+        // Türkçe karakterleri İngilizce karşılıklarıyla değiştirerek PlayerPrefs için güvenli anahtarlar oluşturur.
+        string sanitizedName = npcName
+            .Replace("ı", "i").Replace("İ", "I")
+            .Replace("ş", "s").Replace("Ş", "S")
+            .Replace("ğ", "g").Replace("Ğ", "G")
+            .Replace("ü", "u").Replace("Ü", "U")
+            .Replace("ö", "o").Replace("Ö", "O")
+            .Replace("ç", "c").Replace("Ç", "C");
+
+        string safeName = sanitizedName.Replace(" ", "_").Replace("-", "_");
         string prefix = $"NPC_{safeName}_";
         if (PlayerPrefs.HasKey(prefix + "openness"))
         {
@@ -75,6 +91,7 @@ public class NPCController : MonoBehaviour
         if (playerObject != null)
             player = playerObject.transform;
 
+        // Ollama sunucusu aktifse, bu karakter için özelleştirilmiş sistemi (System Prompt) kurarak modeli hazırlar.
         if (ollamaManager != null)
         {
             modelId = ollamaManager.SanitizeModelName(npcName);
@@ -84,6 +101,7 @@ public class NPCController : MonoBehaviour
 
             isThinking = true;
             bool createSuccess = false;
+            // Model oluşturma işlemi asenkron olduğundan Coroutine ile beklenir.
             yield return StartCoroutine(
                 ollamaManager.CreateNPCModel(modelId, systemPrompt, success => createSuccess = success)
             );
@@ -126,6 +144,7 @@ public class NPCController : MonoBehaviour
     }
 
     #region AI Interaction
+    // Oyuncunun etkileşimi sonrasında yapay zeka üzerinden karaktere uygun bir cevap üretilmesini sağlar.
     public void InteractWithPlayer(string playerMessage)
     {
         if (ollamaManager == null || string.IsNullOrEmpty(modelId) || !modelReady)
@@ -134,23 +153,28 @@ public class NPCController : MonoBehaviour
             return;
         }
 
+        // Karakterin en güçlü anılarını alarak modele bağlam (context) olarak verir.
         string memoryContext = GetMemoryContextForAI();
 
+        // Yapay zekaya gönderilecek son komut setini (Prompt) birleştirir.
         string finalPrompt =
             $"You are {npcName}.\n" +
             $"Your current mood: {GetDispositionLabel()}.\n" +
             $"Recent events: {memoryContext}.\n" +
             $"What happened: {playerMessage}\n" +
-            $"Respond as {npcName} would. ONLY 1 sentence, max 5 words. No explanations.";
+            $"Respond as {npcName} would. ONLY 1 sentence, max 8 words. No explanations.";
 
         Debug.Log($"<color=yellow>{npcName}</color> is thinking...");
 
         isThinking = true;
+        // API çağrısını başlatır
         ollamaManager.SendMessageToNPC(modelId, finalPrompt, (reply) =>
         {
             isThinking = false;
-            string shortReply = LimitReplyByWords(reply, 5);
+            // Cevabı 8 kelime ile sınırlandırır
+            string shortReply = LimitReplyByWords(reply, 8);
 
+            // Üretilen cevabı diyalog balonunda gösterir
             if (dialogueManager != null)
                 dialogueManager.ShowMessage(shortReply);
 
@@ -158,7 +182,8 @@ public class NPCController : MonoBehaviour
         }, aiTemperature);
     }
 
-    private string LimitReplyByWords(string reply, int maxWords = 5)
+    // Gelen cevabı kelime sınırına göre kırpan yardımcı fonksiyon
+    private string LimitReplyByWords(string reply, int maxWords = 8)
     {
         if (string.IsNullOrWhiteSpace(reply))
             return "";
@@ -183,40 +208,60 @@ public class NPCController : MonoBehaviour
         return strongMemories.Any() ? string.Join(", ", strongMemories) : "No significant memories.";
     }
 
-    private string GenerateSystemPrompt()
+    // Karakterin adına ve OCEAN kişilik parametrelerine bağlı olarak başlangıç System Prompt'unu oluşturur.
+    private string GenerateSystemPrompt()  
     {
         string cleanName = npcName.Replace("-", " ").Replace("_", " ");
 
+        string basePrompt = "";
+
+        // Ayşe Teyze: Sıcakkanlı ve neşeli
         if (cleanName.Contains("Ayse"))
         {
-            return "You are Aunt Ayse, a warm and cheerful old woman. " +
-                   "You love chatting and always speak kindly. " +
-                   "You call people dear. " +
-                   "Example replies: 'So sweet, dear.', 'Bless you, dear.', 'How lovely, dear.' " +
-                   "Rules: Reply only in English. One short sentence. Maximum 5 words.";
+            basePrompt = "You are Aunt Ayse, a warm and cheerful old woman. " +
+                         "You love chatting and always speak kindly. " +
+                         "You call people dear. " +
+                         "Example replies: 'So sweet, dear.', 'Bless you, dear.', 'How lovely, dear.'";
         }
+        // Ahmet Amca: Huysuz ve şüpheci
         else if (cleanName.Contains("Ahmet"))
         {
-            return "You are Uncle Ahmet, a grumpy and suspicious old man. " +
-                   "You dislike noise and trust people slowly. " +
-                   "You sound annoyed and blunt. " +
-                   "Example replies: 'Leave me alone.', 'What now?', 'Go away.' " +
-                   "Rules: Reply only in English. One short sentence. Maximum 5 words.";
+            basePrompt = "You are Uncle Ahmet, a grumpy and suspicious old man. " +
+                         "You dislike noise and trust people slowly. " +
+                         "You sound annoyed and blunt. " +
+                         "Example replies: 'Leave me alone.', 'What now?', 'Go away.'";
         }
+        // Mehmet Amca: Ciddi ve sakin
         else if (cleanName.Contains("Mehmet"))
         {
-            return "You are Uncle Mehmet, a calm and serious old man. " +
-                   "You are polite, careful, and formal. " +
-                   "You sound measured and reserved. " +
-                   "Example replies: 'Thank you kindly.', 'I appreciate this.', 'Very well then.' " +
-                   "Rules: Reply only in English. One short sentence. Maximum 5 words.";
+            basePrompt = "You are Uncle Mehmet, a calm and serious old man. " +
+                         "You are polite, careful, and formal. " +
+                         "You sound measured and reserved. " +
+                         "Example replies: 'Thank you kindly.', 'I appreciate this.', 'Very well then.'";
+        }
+        else
+        {
+            basePrompt = $"You are {cleanName}.";
         }
 
-        return $"You are {cleanName}. Reply only in English. One short sentence. Maximum 5 words.";
+        // OCEAN değerlerini içeren prompt eklemesi
+        string personalityPrompt =
+            $"\nYour personality is defined by these OCEAN traits (scale 0.0 to 1.0):\n" +
+            $"- Openness: {personality.openness:F2}\n" +
+            $"- Conscientiousness: {personality.conscientiousness:F2}\n" +
+            $"- Extraversion: {personality.extraversion:F2}\n" +
+            $"- Agreeableness: {personality.agreeableness:F2}\n" +
+            $"- Neuroticism: {personality.neuroticism:F2}\n" +
+            $"Adjust your tone and replies to reflect these traits (e.g., higher Agreeableness makes you nicer, higher Neuroticism makes you more anxious or grumpier).";
+
+        string rules = "\nRules: Reply only in English. One short sentence. Maximum 8 words. React to events (like noises, park sounds, or darkness) naturally based on your personality, do not blindly repeat template greetings.";
+
+        return basePrompt + personalityPrompt + rules;
     }
     #endregion
 
     #region Trigger System
+    // Çevresel olaylar tetiklendiğinde karaktere etki uygulayan ve hafızaya anı ekleyen metot.
     public void ActivateTrigger(string triggerType, float impact = 0f, List<string> tags = null)
     {
         if (impact == 0f)
@@ -225,6 +270,7 @@ public class NPCController : MonoBehaviour
         if (tags == null)
             tags = new List<string> { triggerType };
 
+        // Belleğe yeni olayı ekler
         AddMemory(triggerType, impact, tags);
 
         if (memories.Count > 0)
@@ -232,11 +278,27 @@ public class NPCController : MonoBehaviour
 
         Debug.Log($"{npcName} received trigger: {triggerType} ({impact:F2})");
 
-        if (UnityEngine.Random.value < 0.4f)
+        // Konuşma bekleme süresi (cooldown) kontrolüyle rastgele bir konuşma tepkisi oluşturur.
+        if (Time.time - lastSpeechTime >= speechCooldown)
         {
-            string triggerMessage = TriggerToAIMessage(triggerType);
-            InteractWithPlayer(triggerMessage);
+            if (UnityEngine.Random.value < 0.4f)
+            {
+                lastSpeechTime = Time.time + 2.0f; // Eşzamanlı spam tetiklemeleri önlemek için geçici tampon
+                string triggerMessage = TriggerToAIMessage(triggerType);
+                StartCoroutine(StaggeredSpeechRoutine(triggerMessage));
+            }
         }
+    }
+
+    // Karakterlerin tepkilerinin üst üste binmemesi için rastgele bir gecikmeyle diyalog başlatır.
+    private IEnumerator StaggeredSpeechRoutine(string triggerMessage)
+    {
+        // Doğallık katmak için 0.3 ile 1.8 saniye arası bekler
+        float delay = UnityEngine.Random.Range(0.3f, 1.8f);
+        yield return new WaitForSeconds(delay);
+
+        lastSpeechTime = Time.time;
+        InteractWithPlayer(triggerMessage);
     }
 
     private string TriggerToAIMessage(string triggerType)
@@ -251,6 +313,8 @@ public class NPCController : MonoBehaviour
         if (t.Contains("safe")) return "Things feel safe now.";
         if (t.Contains("rain")) return "It started raining.";
         if (t.Contains("morning")) return "Morning has arrived.";
+        if (t.Contains("park")) return "Sounds are coming from the park.";
+        if (t.Contains("quiet_night")) return "The night is very quiet.";
 
         return $"Something happened: {triggerType}.";
     }
@@ -270,12 +334,14 @@ public class NPCController : MonoBehaviour
     #endregion
 
     #region Movement & Memory
+    // NPC'nin oyuncuyla arasındaki mesafeye ve anlık tutumuna göre (Hostile, Friendly vb.) hareketini belirler.
     void UpdateBehavior()
     {
         if (player == null || rb == null) return;
 
         float distance = Vector2.Distance(transform.position, player.position);
 
+        // Algılama menzilinde ise tutuma göre davranış sergiler
         if (distance < detectionRange)
         {
             string disposition = GetDispositionLabel();
@@ -283,22 +349,23 @@ public class NPCController : MonoBehaviour
             switch (disposition)
             {
                 case "Friendly":
-                    MoveTowards(player.position, moveSpeed);
+                    MoveTowards(player.position, moveSpeed); // Dostça: Oyuncuya doğru hızlı yürü
                     break;
                 case "Warm":
-                    MoveTowards(player.position, moveSpeed * 0.5f);
+                    MoveTowards(player.position, moveSpeed * 0.5f); // Sıcak: Oyuncuya yavaşça yaklaş
                     break;
                 case "Neutral":
-                    StopMovement();
+                    StopMovement(); // Nötr: Hareketsiz kal
                     break;
                 case "Uneasy":
-                    MoveAway(player.position, moveSpeed * 0.5f);
+                    MoveAway(player.position, moveSpeed * 0.5f); // Tedirgin: Oyuncudan yavaşça uzaklaş
                     break;
                 case "Hostile":
-                    MoveAway(player.position, moveSpeed);
+                    MoveAway(player.position, moveSpeed); // Düşmanca: Oyuncudan hızlıca kaç
                     break;
             }
         }
+        // Oyuncu menzilden çıktığında eski başlangıç noktasına geri döner
         else if (Vector2.Distance(transform.position, startPosition) > 0.1f)
         {
             MoveTowards(startPosition, moveSpeed * 0.3f);
@@ -338,11 +405,23 @@ public class NPCController : MonoBehaviour
             memories.RemoveAt(0);
     }
 
-    public float GetOverallDisposition()
+    // Karakterin belleğindeki anıları sıfırlayarak temel mizaç ayarlarına dönmesini sağlar.
+    public void ClearMemories()
     {
-        return memories.Count == 0 ? 0f : memories.Sum(m => m.GetStrength());
+        memories.Clear();
+        UpdateEmotionDisplay();
     }
 
+    // Karakterin temel mizaç tutumunu (Agreeableness ve Neuroticism) ve anılarının toplamını hesaba katarak genel tutum puanını hesaplar.
+    public float GetOverallDisposition()
+    {
+        // Temel mizaç puanı: Uzlaşmacılık (Agreeableness) arttıkça olumluya, Nevrotiklik (Neuroticism) arttıkça olumsuza eğilim gösterir.
+        float baseDisp = (personality.agreeableness - 0.5f) * 1.0f - (personality.neuroticism - 0.5f) * 0.4f;
+        float memorySum = memories.Sum(m => m.GetStrength());
+        return Mathf.Clamp(baseDisp + memorySum, -1.0f, 1.0f);
+    }
+
+    // Toplam tutum puanına göre karaktere uygun ruh hali etiketini döndürür.
     public string GetDispositionLabel()
     {
         float disp = GetOverallDisposition();
@@ -354,13 +433,14 @@ public class NPCController : MonoBehaviour
         return "Neutral";
     }
 
+    // Karaktere bağlı SpriteRenderer üzerindeki duygu durum ikonunu günceller.
     void UpdateEmotionDisplay()
     {
         if (emotionIcon == null) return;
 
         string disposition = GetDispositionLabel();
 
-        // Emojilerin orijinal renklerini korumak için rengi beyaza sabitliyoruz (renk filtresi/tonlama uygulanmasın)
+      
         emotionIcon.color = Color.white;
 
         switch (disposition)

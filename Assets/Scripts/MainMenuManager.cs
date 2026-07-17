@@ -8,6 +8,8 @@ using UnityEngine.SceneManagement;
 using TMPro;
 using UnityEngine.Networking;
 
+// Ana menü ekranındaki tüm arayüz bileşenlerini, buton etkileşimlerini, yapay zeka bağlantı durumunu,
+// OCEAN mizaç editörünü ve retro arayüz animasyonlarını kontrol eden merkezi yöneticidir.
 public class MainMenuManager : MonoBehaviour
 {
     [Header("Retro Terminal Assets (Bakes)")]
@@ -34,7 +36,7 @@ public class MainMenuManager : MonoBehaviour
     public Color terminalGreen = new Color(0.2f, 1f, 0.2f, 1f);
     public Color terminalCyan = new Color(0f, 1f, 1f, 1f);
 
-    // Neural Network simulation
+    // Arka plandaki şeffaf sinir ağı (Node) simülasyon sınıfı
     private class NeuronNode
     {
         public RectTransform rect;
@@ -47,40 +49,43 @@ public class MainMenuManager : MonoBehaviour
     private int maxNodes = 25;
     private float maxLineDistance = 160f;
 
-    // Temporary values for Cognitive Editor
+    // Bilişsel profil editöründeki geçici OCEAN değerleri
     private float tAhmetO, tAhmetC, tAhmetE, tAhmetA, tAhmetN;
     private float tAyseO, tAyseC, tAyseE, tAyseA, tAyseN;
     private float tMehmetO, tMehmetC, tMehmetE, tMehmetA, tMehmetN;
 
     private void Start()
     {
+        // FPS sınırını 60'a sabitleyerek kararlı çalışma sağlar
         Application.targetFrameRate = 60;
 
-        // Initialize defaults if empty
+        // Karakterlerin OCEAN değerleri kayıtlı değilse varsayılanları yükler
         InitializeDefaultTraits();
 
-        // Bind button actions and hover triggers on the baked UI
+        // Butonların tıklama ve üzerine gelme (hover) durumlarını bağlar
         BindUIControls();
 
-        // Setup the moving background nodes
+        // Arka plandaki sinir ağı düğüm yapısını kurar
         SetupNeuralNetwork();
 
-        // Hide settings panel initially
+        // Başlangıçta kişilik ayarları panelini gizli tutar
         if (cognitiveSettingsPanel != null)
         {
             cognitiveSettingsPanel.SetActive(false);
         }
 
-        // Display current states
+        // Karakter mizaç etiketlerini (Huysuz, Sosyal vb.) arayüzde günceller
         UpdatePersonalityLabels();
 
-        // Start connection polling
+        // Ollama yapay zeka sunucu bağlantısını kontrol eden döngüyü başlatır
         StartCoroutine(CheckOllamaStatusLoop());
     }
 
     private void Update()
     {
+        // Sinir ağının düğüm hareketlerini ve bağlantı çizgilerini günceller
         UpdateNeuralNetwork();
+        // Ollama durum göstergesi LED'ini yanıp söner hale getirir
         AnimateOllamaLed();
     }
 
@@ -276,11 +281,12 @@ public class MainMenuManager : MonoBehaviour
     #endregion
 
     #region Neural Network Simulation
+    // Arka plandaki cyberpunk tarzı hareketli sinir ağı parçacıklarını oluşturur.
     private void SetupNeuralNetwork()
     {
         if (neuronContainer == null) return;
 
-        // Clear existing generated children
+        // Önceden oluşturulmuş eski çocuk nesneleri temizler
         foreach (Transform child in neuronContainer)
         {
             Destroy(child.gameObject);
@@ -289,7 +295,7 @@ public class MainMenuManager : MonoBehaviour
         activeLines.Clear();
         linePool.Clear();
 
-        // Spawn drift nodes
+        // Düğüm noktalarını rastgele pozisyon ve hız değerleriyle sahneye yerleştirir
         for (int i = 0; i < maxNodes; i++)
         {
             GameObject nodeGo = new GameObject("Node_" + i);
@@ -303,7 +309,7 @@ public class MainMenuManager : MonoBehaviour
             );
 
             Image img = nodeGo.AddComponent<Image>();
-            img.color = new Color(0f, 0.8f, 0.8f, 0.3f); // Translucent Cyan
+            img.color = new Color(0f, 0.8f, 0.8f, 0.3f); // Yarı saydam Cyan rengi
 
             NeuronNode node = new NeuronNode
             {
@@ -317,6 +323,7 @@ public class MainMenuManager : MonoBehaviour
         }
     }
 
+    // Düğümleri hareket ettirir, ekran dışına çıkanları sarar ve birbirine yakın olan düğümler arasına çizgi çizer.
     private void UpdateNeuralNetwork()
     {
         if (neuronContainer == null) return;
@@ -402,17 +409,19 @@ public class MainMenuManager : MonoBehaviour
     #endregion
 
     #region Ollama Status Checker
+    // Yerel Ollama sunucusuna HTTP GET isteği göndererek yapay zeka modülünün aktif olup olmadığını kontrol eden döngü.
     private IEnumerator CheckOllamaStatusLoop()
     {
         while (true)
         {
             using (UnityWebRequest request = UnityWebRequest.Get("http://127.0.0.1:11434"))
             {
-                request.timeout = 2;
+                request.timeout = 2; // Cevap vermezse 2 saniye sonra zaman aşımına uğrar
                 yield return request.SendWebRequest();
 
                 if (ollamaStatusText != null && ollamaLed != null)
                 {
+                    // Bağlantı başarılı ise yeşil ışık yak ve durum metnini güncelle
                     if (request.result == UnityWebRequest.Result.Success)
                     {
                         ollamaStatusText.text = "[Ollama: CONNECTED (127.0.0.1:11434)]";
@@ -420,6 +429,7 @@ public class MainMenuManager : MonoBehaviour
                         ollamaLed.color = Color.green;
                         ollamaLed.transform.GetChild(0).GetComponent<Image>().color = new Color(0f, 1f, 0f, 0.4f);
                     }
+                    // Sunucu kapalı veya ulaşılamazsa kırmızı ışık yak
                     else
                     {
                         ollamaStatusText.text = "[Ollama: DISCONNECTED (OFFLINE)]";
@@ -429,10 +439,12 @@ public class MainMenuManager : MonoBehaviour
                     }
                 }
             }
+            // Her 3.5 saniyede bir durumu kontrol etmeye devam eder
             yield return new WaitForSeconds(3.5f);
         }
     }
 
+    // Arayüzdeki Ollama durumu LED'inin parıldama efekti animasyonu
     private void AnimateOllamaLed()
     {
         if (ollamaLed == null) return;
@@ -440,6 +452,7 @@ public class MainMenuManager : MonoBehaviour
         Transform glow = ollamaLed.transform.GetChild(0);
         if (glow != null)
         {
+            // Sinüs dalgası kullanarak boyutunu dinamik olarak büyütüp küçültür
             float scale = 1f + 0.3f * Mathf.Sin(Time.time * 4f);
             glow.localScale = new Vector3(scale, scale, 1f);
         }
@@ -519,23 +532,26 @@ public class MainMenuManager : MonoBehaviour
         }
     }
 
+    // Slider bileşenlerinden okunan güncel OCEAN değerlerini PlayerPrefs üzerine kaydeder
     private void SaveSettingsValues()
     {
         PlaySynthBeep(660f, 0.15f);
 
-        // Fetch values from Slider components
+        // Ahmet Amca değerleri
         PlayerPrefs.SetFloat("NPC_Ahmet_Amca_openness", ahmetO ? ahmetO.value : 0.3f);
         PlayerPrefs.SetFloat("NPC_Ahmet_Amca_conscientiousness", ahmetC ? ahmetC.value : 0.4f);
         PlayerPrefs.SetFloat("NPC_Ahmet_Amca_extraversion", ahmetE ? ahmetE.value : 0.2f);
         PlayerPrefs.SetFloat("NPC_Ahmet_Amca_agreeableness", ahmetA ? ahmetA.value : 0.3f);
         PlayerPrefs.SetFloat("NPC_Ahmet_Amca_neuroticism", ahmetN ? ahmetN.value : 0.8f);
 
+        // Ayse Teyze değerleri
         PlayerPrefs.SetFloat("NPC_Ayse_Teyze_openness", ayseO ? ayseO.value : 0.7f);
         PlayerPrefs.SetFloat("NPC_Ayse_Teyze_conscientiousness", ayseC ? ayseC.value : 0.6f);
         PlayerPrefs.SetFloat("NPC_Ayse_Teyze_extraversion", ayseE ? ayseE.value : 0.8f);
         PlayerPrefs.SetFloat("NPC_Ayse_Teyze_agreeableness", ayseA ? ayseA.value : 0.9f);
         PlayerPrefs.SetFloat("NPC_Ayse_Teyze_neuroticism", ayseN ? ayseN.value : 0.3f);
 
+        // Mehmet Amca değerleri
         PlayerPrefs.SetFloat("NPC_Mehmet_Amca_openness", mehmetO ? mehmetO.value : 0.5f);
         PlayerPrefs.SetFloat("NPC_Mehmet_Amca_conscientiousness", mehmetC ? mehmetC.value : 0.7f);
         PlayerPrefs.SetFloat("NPC_Mehmet_Amca_extraversion", mehmetE ? mehmetE.value : 0.5f);
@@ -627,8 +643,8 @@ public class MainMenuManager : MonoBehaviour
     #region Scene Navigation Controls
     public void StartGame()
     {
-        Debug.Log("Loading Tutorial scene...");
-        SceneManager.LoadScene("Tutorial");
+        Debug.Log("Loading SampleScene...");
+        SceneManager.LoadScene("SampleScene");
     }
 
     public void QuitGame()
@@ -639,28 +655,33 @@ public class MainMenuManager : MonoBehaviour
     #endregion
 
     #region Audio Generation
+    // Menü etkileşim seslerini (klik ve hover bip sesleri) kod tarafında anlık sentezleyerek çalan metot
     private void PlaySynthBeep(float frequency, float duration)
     {
+        // Ses çalmak için geçici bir GameObject oluşturur
         GameObject audioObj = new GameObject("SynthBeep");
         AudioSource audioSource = audioObj.AddComponent<AudioSource>();
         audioSource.playOnAwake = false;
-        audioSource.spatialBlend = 0f;
+        audioSource.spatialBlend = 0f; // Sesi 2D/Stereo olarak oynatır (derinliksiz)
 
         int sampleRate = 44100;
         float[] samples = new float[(int)(sampleRate * duration)];
         
+        // Matematiksel sinüs dalgası kullanarak ses örneklerini oluşturur
         for (int i = 0; i < samples.Length; i++)
         {
             float percent = (float)i / samples.Length;
-            float envelope = 1f - percent;
+            float envelope = 1f - percent; // Sesin sonuna doğru azalan sönümleme zarfı (envelope)
             samples[i] = Mathf.Sin(2f * Mathf.PI * frequency * i / sampleRate) * 0.08f * envelope * envelope;
         }
 
+        // Oluşturulan örneklerle yeni bir ses klibi yaratır ve çalar
         AudioClip clip = AudioClip.Create("BeepClip", samples.Length, 1, sampleRate, false);
         clip.SetData(samples, 0);
         audioSource.clip = clip;
         audioSource.Play();
         
+        // Ses çalma işlemi tamamlandıktan kısa süre sonra geçici objeyi siler
         Destroy(audioObj, duration + 0.15f);
     }
     #endregion

@@ -5,6 +5,8 @@ using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using TMPro;
 
+// Unity Editöründe geliştiricinin menü tasarımını otomatik oluşturmasını (Baking) sağlayan araç sınıfıdır.
+// Sahne içerisine gerekli Canvas, Panel, Buton ve OCEAN ayar bileşenlerini yerleştirip birbirine bağlar.
 public class MainMenuSetup : Editor
 {
     private static Color terminalGreen = new Color(0.2f, 1f, 0.2f, 1f);
@@ -12,10 +14,11 @@ public class MainMenuSetup : Editor
     private static Color darkBg = new Color(0.04f, 0.06f, 0.1f, 0.9f);
     private static Color borderColors = new Color(0f, 0.8f, 0.8f, 0.4f);
 
+    // Üst menüde Tools altında "Set Up Main Menu UI" butonu oluşturur
     [MenuItem("Tools/Set Up Main Menu UI")]
     public static void SetupMainMenuUI()
     {
-        // 1. Open the MainMenu scene
+        // 1. Ana Menü sahnesini açar
         string scenePath = "Assets/Scenes/MainMenu.unity";
         var scene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
         
@@ -25,7 +28,7 @@ public class MainMenuSetup : Editor
             return;
         }
 
-        // 2. Locate or create MenuManager
+        // 2. Sahnedeki MenuManager nesnesini bulur veya yoksa oluşturur
         GameObject managerGo = GameObject.Find("MenuManager");
         if (managerGo == null)
         {
@@ -37,7 +40,7 @@ public class MainMenuSetup : Editor
             manager = managerGo.AddComponent<MainMenuManager>();
         }
 
-        // 3. Find Canvas
+        // 3. Canvas bileşenini bulur veya yeni bir Canvas oluşturur
         Canvas canvas = Object.FindFirstObjectByType<Canvas>();
         if (canvas == null)
         {
@@ -49,7 +52,7 @@ public class MainMenuSetup : Editor
             Debug.Log("Created new Canvas in scene.");
         }
 
-        // De-active other children in Canvas to keep it clean (except MenuManager)
+        // Temiz bir oluşturma yapmak için Canvas altındaki diğer çocukları deaktive eder (MenuManager ve CyberpunkUI_Root hariç)
         foreach (Transform child in canvas.transform)
         {
             if (child.gameObject.name != managerGo.name && child.gameObject.name != "CyberpunkUI_Root")
@@ -58,14 +61,14 @@ public class MainMenuSetup : Editor
             }
         }
 
-        // Delete existing baked UI if it exists, to re-bake cleanly
+        // Çakışmaları engellemek için eğer eski bir CyberpunkUI_Root varsa siler
         Transform existingRoot = canvas.transform.Find("CyberpunkUI_Root");
         if (existingRoot != null)
         {
             Undo.DestroyObjectImmediate(existingRoot.gameObject);
         }
 
-        // Load project assets
+        // Projedeki gerekli font ve görsel kaynakları (AssetDatabase ile) yükler
         TMP_FontAsset font = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/PixelifySans-VariableFont_wght SDF.asset");
         Sprite ahmet = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/NPC/Ahmet/character_maleAdventurer_idle.png");
         Sprite ayse = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/NPC/Ayse/character_femalePerson_idle 1.png");
@@ -76,7 +79,7 @@ public class MainMenuSetup : Editor
         manager.ayseSprite = ayse;
         manager.mehmetSprite = mehmet;
 
-        // 4. Construct Bakes UI Root
+        // 4. Ana UI kök nesnesini (CyberpunkUI_Root) inşa eder
         GameObject rootGo = new GameObject("CyberpunkUI_Root");
         rootGo.transform.SetParent(canvas.transform, false);
         RectTransform rootRt = rootGo.AddComponent<RectTransform>();
@@ -85,7 +88,7 @@ public class MainMenuSetup : Editor
         rootRt.sizeDelta = Vector2.zero;
         Undo.RegisterCreatedObjectUndo(rootGo, "Create Cyberpunk UI Root");
 
-        // Background dark panel
+        // Koyu renkli arka plan paneli
         GameObject bg = new GameObject("BgSlate");
         bg.transform.SetParent(rootGo.transform, false);
         RectTransform bgRt = bg.AddComponent<RectTransform>();
@@ -95,7 +98,7 @@ public class MainMenuSetup : Editor
         Image bgImg = bg.AddComponent<Image>();
         bgImg.color = new Color(0.03f, 0.05f, 0.08f, 1f);
 
-        // Neural Network dynamic container
+        // Sinir ağı simülasyonu parçacık konteyneri
         GameObject neuronGo = new GameObject("NeuronContainer");
         neuronGo.transform.SetParent(rootGo.transform, false);
         RectTransform neuronRt = neuronGo.AddComponent<RectTransform>();
@@ -104,10 +107,10 @@ public class MainMenuSetup : Editor
         neuronRt.sizeDelta = Vector2.zero;
         manager.neuronContainer = neuronRt;
 
-        // --- HEADER BAR ---
+        // --- ÜST BAŞLIK BARI (HEADER BAR) ---
         GameObject header = CreateGlassPanel(rootGo.transform, "HeaderBar", new Vector2(-40f, 50f), new Vector2(0f, -10f), new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f), new Color(0f, 1f, 1f, 0.15f), darkBg);
 
-        // Ollama panel
+        // Ollama Durum paneli
         GameObject ollamaPanel = new GameObject("OllamaPanel");
         ollamaPanel.transform.SetParent(header.transform, false);
         RectTransform ollamaRt = ollamaPanel.AddComponent<RectTransform>();
@@ -117,7 +120,7 @@ public class MainMenuSetup : Editor
         ollamaRt.anchoredPosition = new Vector2(15f, 0f);
         ollamaRt.sizeDelta = new Vector2(400f, 30f);
 
-        // LED Indicator
+        // LED Durum Göstergesi
         GameObject led = new GameObject("LedIndicator");
         led.transform.SetParent(ollamaPanel.transform, false);
         RectTransform ledRt = led.AddComponent<RectTransform>();
@@ -130,7 +133,7 @@ public class MainMenuSetup : Editor
         ledImg.color = Color.red;
         manager.ollamaLed = ledImg;
 
-        // LED Glow
+        // LED Parlama Efekti
         GameObject ledGlow = new GameObject("LedGlow");
         ledGlow.transform.SetParent(led.transform, false);
         RectTransform ledGlowRt = ledGlow.AddComponent<RectTransform>();
@@ -140,14 +143,14 @@ public class MainMenuSetup : Editor
         Image ledGlowImg = ledGlow.AddComponent<Image>();
         ledGlowImg.color = new Color(1f, 0f, 0f, 0.4f);
 
-        // Connection text
+        // Bağlantı durum metni
         var statusTxt = CreateText(ollamaPanel.transform, "StatusText", "[Ollama: CONNECTING...]", 13, TextAlignmentOptions.Left, new Color(0.7f, 0.8f, 0.9f), new Vector2(380f, 30f), new Vector2(20f, 0f), font);
         manager.ollamaStatusText = statusTxt;
 
-        // Date/Academic text
+        // Akademik proje bilgilendirme metni
         CreateText(header.transform, "AcademicText", "Haziran 2026 - ISTANBUL   |   (Akademik Savunma Notu)", 13, TextAlignmentOptions.Right, terminalCyan, new Vector2(600f, 40f), new Vector2(-15f, 0f), font);
 
-        // --- MAIN TITLE PANEL ---
+        // --- ANA PROJE BAŞLIK PANELİ (TITLE) ---
         GameObject titleGo = new GameObject("MainTitle");
         titleGo.transform.SetParent(rootGo.transform, false);
         RectTransform titleRt = titleGo.AddComponent<RectTransform>();
@@ -179,7 +182,7 @@ public class MainMenuSetup : Editor
         titleSubText.alignment = TextAlignmentOptions.Center;
         titleSubText.text = "(Bilişsel Simülasyon Arayüzü)";
 
-        // --- MIDDLE PANEL GRID CONTAINER ---
+        // --- ORTA ALAN PANELİ ---
         GameObject middleContainer = new GameObject("MiddleContainer");
         middleContainer.transform.SetParent(rootGo.transform, false);
         RectTransform midRt = middleContainer.AddComponent<RectTransform>();
@@ -189,13 +192,11 @@ public class MainMenuSetup : Editor
         midRt.anchoredPosition = new Vector2(0f, -40f);
         midRt.sizeDelta = new Vector2(1200f, 440f);
 
-        // --- LEFT PANEL: MENU OPTIONS ---
+        // --- SOL PANEL: ANA MENÜ SEÇENEKLERİ ---
         GameObject leftPanel = CreateGlassPanel(middleContainer.transform, "LeftPanel_Menu", new Vector2(520f, 380f), new Vector2(40f, 0f), new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), borderColors, darkBg);
         
-        // Left Subtitle
         CreateText(leftPanel.transform, "LeftPanelTitle", "[ MENÜ SEÇENEKLERİ ]", 18, TextAlignmentOptions.Center, terminalCyan, new Vector2(480f, 30f), new Vector2(0f, -20f), font);
 
-        // Button Container
         GameObject btnContainer = new GameObject("ButtonContainer");
         btnContainer.transform.SetParent(leftPanel.transform, false);
         RectTransform btnConRt = btnContainer.AddComponent<RectTransform>();
@@ -204,24 +205,21 @@ public class MainMenuSetup : Editor
         btnConRt.anchoredPosition = new Vector2(0f, -25f);
         btnConRt.sizeDelta = new Vector2(-40f, -100f);
 
-        // Create Baked Button Objects
+        // Hazır butonları oluşturur ve yerleştirir
         CreateBakedButton(btnContainer.transform, new Vector2(0f, 160f), "INITIALIZE_SIMULATION", "INITIALIZE SIMULATION", "Simülasyonu Başlat", font);
         CreateBakedButton(btnContainer.transform, new Vector2(0f, 80f), "COGNITIVE_PROFILES", "COGNITIVE PROFILES", "Mizaç ve Kişilik Ayarları", font);
         CreateBakedButton(btnContainer.transform, new Vector2(0f, 0f), "SHUTDOWN", "SHUTDOWN", "Çıkış", font);
 
-        // Left Caption
         CreateText(leftPanel.transform, "LeftCaption", "(Arka Planda Şeffaf Nöron Çizgileri)", 11, TextAlignmentOptions.Center, new Color(0.5f, 0.6f, 0.7f, 0.7f), new Vector2(480f, 20f), new Vector2(0f, 15f), font);
 
-        // --- RIGHT PANEL: COGNITIVE STATUS ---
+        // --- SAĞ PANEL: COGNITIVE DURUM EKRANI ---
         GameObject rightPanel = CreateGlassPanel(middleContainer.transform, "RightPanel_Status", new Vector2(560f, 380f), new Vector2(-40f, 0f), new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), borderColors, darkBg);
 
-        // Right Subtitle
         CreateText(rightPanel.transform, "RightPanelTitle", "[ SİSTEM COGNITIVE DURUMU ]", 18, TextAlignmentOptions.Center, terminalCyan, new Vector2(520f, 30f), new Vector2(0f, -20f), font);
 
-        // Specs block
+        // Sunucu özellikleri bilgi bloğu
         CreateText(rightPanel.transform, "SpecsBlock", "* Model: Phi-3 (3.8B) [Q4]\n* Altyapı: Local Ollama API\n* Algoritma: Ebbinghaus & OCEAN Model", 13, TextAlignmentOptions.Left, new Color(0.8f, 0.9f, 1f), new Vector2(500f, 75f), new Vector2(30f, -50f), font);
 
-        // Character status container
         GameObject charListGo = new GameObject("CharacterList");
         charListGo.transform.SetParent(rightPanel.transform, false);
         RectTransform charListRt = charListGo.AddComponent<RectTransform>();
@@ -230,15 +228,14 @@ public class MainMenuSetup : Editor
         charListRt.anchoredPosition = new Vector2(0f, -50f);
         charListRt.sizeDelta = new Vector2(-40f, -170f);
 
-        // Character status rows
+        // Karakter durum satırlarını ekler
         manager.ahmetLabel = CreateCharacterStatusRow(charListGo.transform, new Vector2(0f, 100f), ahmet, "Ahmet Amca", font);
         manager.ayseLabel = CreateCharacterStatusRow(charListGo.transform, new Vector2(0f, 50f), ayse, "Ayşe Teyze", font);
         manager.mehmetLabel = CreateCharacterStatusRow(charListGo.transform, new Vector2(0f, 0f), mehmet, "Mehmet Amca", font);
 
-        // Right Caption
         CreateText(rightPanel.transform, "RightCaption", "(Karakterlerin Minik Sprite'ları)", 11, TextAlignmentOptions.Center, new Color(0.5f, 0.6f, 0.7f, 0.7f), new Vector2(520f, 20f), new Vector2(0f, 15f), font);
 
-        // --- FOOTER BAR ---
+        // --- ALT BİLGİ ALANI (FOOTER BAR) ---
         GameObject footer = new GameObject("FooterBar");
         footer.transform.SetParent(rootGo.transform, false);
         RectTransform footerRt = footer.AddComponent<RectTransform>();
@@ -248,7 +245,6 @@ public class MainMenuSetup : Editor
         footerRt.anchoredPosition = new Vector2(0f, 20f);
         footerRt.sizeDelta = new Vector2(-80f, 30f);
 
-        // Line
         GameObject footerLine = new GameObject("FooterLine");
         footerLine.transform.SetParent(footer.transform, false);
         RectTransform footerLineRt = footerLine.AddComponent<RectTransform>();
@@ -262,7 +258,7 @@ public class MainMenuSetup : Editor
         CreateText(footer.transform, "FooterLeftText", "Beyzanur BAKİ - Yazılım Mühendisliği", 13, TextAlignmentOptions.Left, new Color(0.7f, 0.8f, 0.9f), new Vector2(500f, 30f), new Vector2(5f, -10f), font);
         CreateText(footer.transform, "FooterRightText", "Danışman: Dr. Öğr. Üyesi İlhan Gari", 13, TextAlignmentOptions.Right, new Color(0.7f, 0.8f, 0.9f), new Vector2(500f, 30f), new Vector2(-5f, -10f), font);
 
-        // --- COGNITIVE SETTINGS PANELS OVERLAY (BAKED) ---
+        // --- COGNITIVE KİŞİLİK PROFLİ AYARLARI PANELİ (OVERLAY) ---
         GameObject overlay = new GameObject("CognitiveSettingsOverlay");
         overlay.transform.SetParent(rootGo.transform, false);
         RectTransform overlayRt = overlay.AddComponent<RectTransform>();
@@ -271,7 +267,6 @@ public class MainMenuSetup : Editor
         overlayRt.sizeDelta = Vector2.zero;
         manager.cognitiveSettingsPanel = overlay;
 
-        // Dark background tint
         GameObject tint = new GameObject("Tint");
         tint.transform.SetParent(overlay.transform, false);
         RectTransform tintRt = tint.AddComponent<RectTransform>();
@@ -281,13 +276,11 @@ public class MainMenuSetup : Editor
         Image tintImg = tint.AddComponent<Image>();
         tintImg.color = new Color(0.02f, 0.04f, 0.07f, 0.95f);
 
-        // Main Frame Panel
+        // Ayar çerçeve paneli
         GameObject frame = CreateGlassPanel(overlay.transform, "FramePanel", new Vector2(850f, 620f), Vector2.zero, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), borderColors, darkBg);
 
-        // Title
         CreateText(frame.transform, "Title", "[ BİLİŞSEL KİŞİLİK PROFİLİ AYARLARI (OCEAN) ]", 20, TextAlignmentOptions.Center, terminalCyan, new Vector2(800f, 40f), new Vector2(0f, -20f), font);
 
-        // Columns container
         GameObject cols = new GameObject("Columns");
         cols.transform.SetParent(frame.transform, false);
         RectTransform colsRt = cols.AddComponent<RectTransform>();
@@ -296,12 +289,12 @@ public class MainMenuSetup : Editor
         colsRt.anchoredPosition = new Vector2(0f, -25f);
         colsRt.sizeDelta = new Vector2(-40f, -140f);
 
-        // Ahmet, Ayse, Mehmet Columns
+        // Üç karakter için ayrı ayar kolonları oluşturur
         Transform colAhmet = CreateSettingsColumn(cols.transform, new Vector2(-260f, 0f), "Ahmet Amca (Kırılgan)", font);
         Transform colAyse = CreateSettingsColumn(cols.transform, new Vector2(0f, 0f), "Ayşe Teyze (Sosyal)", font);
         Transform colMehmet = CreateSettingsColumn(cols.transform, new Vector2(260f, 0f), "Mehmet Amca (Dengeli)", font);
 
-        // Sliders
+        // Ahmet Amca OCEAN Slider'ları
         manager.ahmetO = CreateEditorSlider(colAhmet, "Deneyime Açıklık", 0.3f, font);
         manager.ahmetO.transform.parent.GetComponent<RectTransform>().anchoredPosition = new Vector2(0f, 160f);
         manager.ahmetC = CreateEditorSlider(colAhmet, "Sorumluluk", 0.4f, font);
@@ -313,6 +306,7 @@ public class MainMenuSetup : Editor
         manager.ahmetN = CreateEditorSlider(colAhmet, "Nevrotiklik", 0.8f, font);
         manager.ahmetN.transform.parent.GetComponent<RectTransform>().anchoredPosition = new Vector2(0f, -120f);
 
+        // Ayşe Teyze OCEAN Slider'ları
         manager.ayseO = CreateEditorSlider(colAyse, "Deneyime Açıklık", 0.7f, font);
         manager.ayseO.transform.parent.GetComponent<RectTransform>().anchoredPosition = new Vector2(0f, 160f);
         manager.ayseC = CreateEditorSlider(colAyse, "Sorumluluk", 0.6f, font);
@@ -324,6 +318,7 @@ public class MainMenuSetup : Editor
         manager.ayseN = CreateEditorSlider(colAyse, "Nevrotiklik", 0.3f, font);
         manager.ayseN.transform.parent.GetComponent<RectTransform>().anchoredPosition = new Vector2(0f, -120f);
 
+        // Mehmet Amca OCEAN Slider'ları
         manager.mehmetO = CreateEditorSlider(colMehmet, "Deneyime Açıklık", 0.5f, font);
         manager.mehmetO.transform.parent.GetComponent<RectTransform>().anchoredPosition = new Vector2(0f, 160f);
         manager.mehmetC = CreateEditorSlider(colMehmet, "Sorumluluk", 0.7f, font);
@@ -335,7 +330,7 @@ public class MainMenuSetup : Editor
         manager.mehmetN = CreateEditorSlider(colMehmet, "Nevrotiklik", 0.4f, font);
         manager.mehmetN.transform.parent.GetComponent<RectTransform>().anchoredPosition = new Vector2(0f, -120f);
 
-        // Control Buttons
+        // Panel Kontrol Butonları (Kaydet, Varsayılan, İptal)
         GameObject controls = new GameObject("Controls");
         controls.transform.SetParent(frame.transform, false);
         RectTransform ctrlRt = controls.AddComponent<RectTransform>();
@@ -349,10 +344,10 @@ public class MainMenuSetup : Editor
         CreateSettingsButton(controls.transform, new Vector2(0f, 0f), "Btn_Reset", "[ VARSAYILAN ]", terminalCyan, font);
         CreateSettingsButton(controls.transform, new Vector2(220f, 0f), "Btn_Cancel", "[ İPTAL ]", Color.white, font);
 
-        // Disable Settings panel overlay by default
+        // Başlangıçta Kişilik Ayarları panelini gizler
         overlay.SetActive(false);
 
-        // 5. Mark Scene and Prefabs dirty to ensure they are saved
+        // 5. Değişikliklerin kaydedilmesi için sahneyi ve objeleri kirli (dirty) olarak işaretler ve sahneyi kaydeder.
         EditorUtility.SetDirty(manager);
         
         bool saveSuccess = EditorSceneManager.SaveScene(scene);

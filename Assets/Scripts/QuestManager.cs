@@ -2,6 +2,8 @@ using UnityEngine;
 using TMPro;
 using System.Collections.Generic;
 
+// Oyundaki görevlerin tanımlanması, ilerleme durumlarının kontrolü,
+// puan kazanma ve arayüzde güncel görev durumunun gösterilmesinden sorumlu yöneticidir.
 public class QuestManager : MonoBehaviour
 {
     public static QuestManager Instance;
@@ -10,15 +12,16 @@ public class QuestManager : MonoBehaviour
     public int totalScore = 0;
 
     [Header("Gorev Durumu")]
-    public bool[] questCompleted = new bool[7];
-    public string[] questDescriptions = new string[7];
-    public int[] questRewards = new int[7];
+    public bool[] questCompleted = new bool[7];      // 7 geceye ait tamamlanma durumları
+    public string[] questDescriptions = new string[7]; // Görev açıklamaları
+    public int[] questRewards = new int[7];           // Görevlerin puan ödülleri
 
     [Header("Gece Takibi")]
     public List<string> greetedNPCs = new List<string>();
     public List<string> visitedNPCs = new List<string>();
     public bool nightEventHandled = false;
-    public bool didSomethingBad = false;
+    public bool didSomethingBad = false; // Oyuncunun bir NPC'ye bağırıp veya saldırdığını takip eder
+    public bool ahmetGiftGiven = false;
 
     [Header("UI")]
     public TextMeshProUGUI questText;
@@ -35,11 +38,12 @@ public class QuestManager : MonoBehaviour
         SetupQuests();
     }
 
+    // Gece görevlerini (açıklama ve ödül puanı) ilklendiren yardımcı metot.
     void SetupQuests()
     {
         questDescriptions[0] = "En az 2 NPC'yi selamla";
         questDescriptions[1] = "Ahmet Abi'ye hediye ver ve baska birini selamla";
-        questDescriptions[2] = "Gurultu olayina mudahale et ve bir NPC'yi sakinlestir";
+        questDescriptions[2] = "Bu gece görev yok.";
         questDescriptions[3] = "Ayse'ye veya Mehmet'e yardim et (birini sec)";
         questDescriptions[4] = "En dusuk tutumlu NPC'yi iyilestir";
         questDescriptions[5] = "Alarm olayina mudahale et ve kimseye kotu davranma";
@@ -47,7 +51,7 @@ public class QuestManager : MonoBehaviour
 
         questRewards[0] = 15;
         questRewards[1] = 20;
-        questRewards[2] = 25;
+        questRewards[2] = 0;
         questRewards[3] = 20;
         questRewards[4] = 15;
         questRewards[5] = 30;
@@ -60,6 +64,7 @@ public class QuestManager : MonoBehaviour
         CheckActiveQuest();
     }
 
+    // Zaman Yöneticisindeki güncel güne/geceye göre aktif görevin gereksinimlerini kontrol eder.
     void CheckActiveQuest()
     {
         if (TimeManager.Instance == null) return;
@@ -91,24 +96,29 @@ public class QuestManager : MonoBehaviour
     // Gece 2: Ahmet'e hediye ver VE baska birini selamla
     void CheckQuest2()
     {
-        // Gift ve greet ayri ayri UIManager'dan tetiklenir
+        if (questCompleted[1]) return;
+
+        // Ahmet'e hediye verildi mi VE Ahmet dışında en az 1 NPC selamlandı mı?
+        bool greetedSomeoneElse = greetedNPCs.Contains("Ayse") || greetedNPCs.Contains("Mehmet");
+
+        if (ahmetGiftGiven && greetedSomeoneElse)
+        {
+            CompleteQuest(1);
+        }
     }
 
-    // Gece 3: Gurultu olayina mudahale et VE bir NPC'yi sakinlestir
+    // Gece 3: Görev kaldırıldı
     void CheckQuest3()
     {
-        // nightEventHandled + greet/gift yapilmis mi?
-        if (questCompleted[2]) return;
-        if (nightEventHandled && greetedNPCs.Count >= 1)
+        if (!questCompleted[2])
         {
             CompleteQuest(2);
         }
     }
 
-    // Gece 4: Ayse'ye VEYA Mehmet'e yardim et
+    // Gece 4: Ayse'ye VEYA Mehmet'e yardim et (UIManager üzerinden tetiklenir)
     void CheckQuest4()
     {
-        // UIManager'dan tetiklenir
     }
 
     // Gece 5: En dusuk tutumlu NPC'yi iyilestir
@@ -122,8 +132,10 @@ public class QuestManager : MonoBehaviour
         string weakestShort = weakest.npcName.Contains("Ahmet") ? "Ahmet" :
                               weakest.npcName.Contains("Ayse") ? "Ayse" : "Mehmet";
 
+        // Oyuncu en zayıf durumdaki NPC ile etkileşime girdi mi?
         if (greetedNPCs.Contains(weakestShort) || visitedNPCs.Contains(weakestShort))
         {
+            // Eğer en zayıf durumdaki NPC'nin genel tutumu sıfıra yakın veya olumlu düzeye (-0.2'den büyük) yükseldiyse
             if (weakest.GetOverallDisposition() > -0.2f)
             {
                 CompleteQuest(4);
@@ -161,6 +173,7 @@ public class QuestManager : MonoBehaviour
         }
     }
 
+    // Tüm NPC'ler arasından oyuncuya karşı anlık tutum puanı en düşük olanı bulur.
     NPCController GetWeakestNPC()
     {
         NPCController weakest = ahmetNPC;
@@ -180,6 +193,7 @@ public class QuestManager : MonoBehaviour
         return weakest;
     }
 
+    // Görevi tamamlanmış olarak işaretler ve ödül puanını ekler.
     void CompleteQuest(int questIndex)
     {
         if (questCompleted[questIndex]) return;
@@ -191,7 +205,7 @@ public class QuestManager : MonoBehaviour
         Debug.Log($"Toplam Puan: {totalScore}");
     }
 
-    // Disaridan cagrilan fonksiyonlar
+    // Oyuncu bir NPC'yi selamladığında çağrılır.
     public void OnNPCGreeted(string npcName)
     {
         if (!greetedNPCs.Contains(npcName))
@@ -200,6 +214,7 @@ public class QuestManager : MonoBehaviour
         }
     }
 
+    // Oyuncu bir NPC ile etkileşime girdiğinde çağrılır.
     public void OnNPCVisited(string npcName)
     {
         if (!visitedNPCs.Contains(npcName))
@@ -208,16 +223,18 @@ public class QuestManager : MonoBehaviour
         }
     }
 
+    // Oyuncu bir NPC'ye hediye verdiğinde çağrılır.
     public void OnGiftGiven(string npcName)
     {
         int night = TimeManager.Instance.currentDay;
 
-        if (night == 2 && npcName == "Ahmet" && greetedNPCs.Count >= 1 && !questCompleted[1])
+        if (night == 2 && npcName == "Ahmet")
         {
-            CompleteQuest(1);
+            ahmetGiftGiven = true;
         }
     }
 
+    // Oyuncu bir NPC'ye yardım ettiğinde çağrılır.
     public void OnHelpGiven(string npcName)
     {
         int night = TimeManager.Instance.currentDay;
@@ -228,41 +245,45 @@ public class QuestManager : MonoBehaviour
         }
     }
 
+    // Oyuncu bir NPC'ye saldırdığında veya bağırdığında tetiklenir.
     public void OnBadAction()
     {
         didSomethingBad = true;
     }
 
+    // Gürültü olayı çözüldüğünde tetiklenir.
     public void OnNoiseEventHandled()
     {
         nightEventHandled = true;
-
-        int night = TimeManager.Instance.currentDay;
-        if (night == 3)
-        {
-            // Quest 3 kontrolu Update'de yapilir
-        }
     }
 
+    // Alarm olayı çözüldüğünde tetiklenir.
     public void OnAlarmEventHandled()
     {
         nightEventHandled = true;
-
-        int night = TimeManager.Instance.currentDay;
-        if (night == 6)
-        {
-            // Quest 6 kontrolu Update'de yapilir
-        }
     }
 
+    // Yeni gün başladığında geceye dair geçici etkileşim kayıtlarını sıfırlar.
+    public void OnNewDay()
+    {
+        greetedNPCs.Clear();
+        visitedNPCs.Clear();
+        nightEventHandled = false;
+        didSomethingBad = false;
+        ahmetGiftGiven = false;
+    }
+
+    // Yeni gece başladığında durumları sıfırlar.
     public void OnNewNight()
     {
         greetedNPCs.Clear();
         visitedNPCs.Clear();
         nightEventHandled = false;
         didSomethingBad = false;
+        ahmetGiftGiven = false;
     }
 
+    // Görev ve Puan bilgilerini arayüzdeki TextMeshPro bileşenlerine aktarır.
     void UpdateQuestUI()
     {
         if (TimeManager.Instance == null) return;

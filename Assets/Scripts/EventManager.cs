@@ -1,10 +1,13 @@
 using UnityEngine;
 
+// Gece boyunca belirli periyotlarla rastgele mahalle olaylarını (gürültü, parktan gelen sesler vb.) tetikleyen sınıftır.
 public class EventManager : MonoBehaviour
 {
+    // Singleton tasarım deseni (Single Instance)
     public static EventManager Instance;
 
     [Header("Olay Ayarlari")]
+    // Olayların ne kadar sürede bir kontrol edilip tetikleneceği (saniye)
     public float eventCheckInterval = 15f;
     private float eventTimer = 0f;
 
@@ -15,6 +18,7 @@ public class EventManager : MonoBehaviour
 
     void Start()
     {
+        // Zaman Yöneticisindeki tetikleme olaylarına dinleyici ekler.
         if (TimeManager.Instance != null)
         {
             TimeManager.Instance.OnTriggerActivated.AddListener(OnTimeTrigger);
@@ -23,10 +27,13 @@ public class EventManager : MonoBehaviour
 
     void Update()
     {
+        // Olaylar sadece gece aktif olduğunda gerçekleşir.
         if (!TimeManager.Instance.isNightActive) return;
 
+        // Geçen süreyi sayaçta biriktirir.
         eventTimer += Time.deltaTime;
 
+        // Belirlenen süre aralığına ulaşıldığında rastgele bir olay tetikler.
         if (eventTimer >= eventCheckInterval)
         {
             eventTimer = 0f;
@@ -34,6 +41,7 @@ public class EventManager : MonoBehaviour
         }
     }
 
+    // Zaman olaylarına (Gündüzden geceye geçiş vb.) verilen tepki
     void OnTimeTrigger(string triggerType)
     {
         // Gece basladiginda olay zamanlayicisini sifirla
@@ -43,6 +51,7 @@ public class EventManager : MonoBehaviour
         }
     }
 
+    // Rastgele bir mahalle olayı belirleyip tetikleyici yöneticisine (TriggerManager) gönderen metot.
     void SpawnRandomEvent()
     {
         int random = Random.Range(0, 4);

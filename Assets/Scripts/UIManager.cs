@@ -1,21 +1,24 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using TMPro;
 
+// Oyundaki etkileşim menülerini (NPC ile konuşma, eylem seçimi vb.),
+// oyuncunun etkileşim haklarının yönetimini ve ekrandaki fade efektli bildirim panellerini kontrol eder.
 public class UIManager : MonoBehaviour
 {
     public static UIManager Instance;
 
     [Header("UI References")]
-    public GameObject interactionPanel;
+    public GameObject interactionPanel; // NPC etkileşim penceresi
 
     [Header("Memory Panel")]
     public GameObject memoryPanel;
 
     [Header("Interaction Rights")]
-    public int maxInteractions = 2;
-    public int remainingInteractions = 2;
+    public int maxInteractions = 2;       // Bir günde kullanılabilecek maksimum etkileşim sayısı
+    public int remainingInteractions = 2; // Kalan günlük etkileşim hakkı
 
     [Header("Warning")]
     public TextMeshProUGUI warningText;
@@ -26,7 +29,7 @@ public class UIManager : MonoBehaviour
     public float eventNotificationDuration = 3f;
 
     private Coroutine eventNotificationCoroutine;
-    private Queue<string> eventNotificationQueue = new Queue<string>();
+    private Queue<string> eventNotificationQueue = new Queue<string>(); // Bildirim kuyruğu (üst üste gelen bildirimleri sırayla göstermek için)
     private bool isDisplayingNotification = false;
     private GameObject currentNPC;
 
@@ -56,20 +59,34 @@ public class UIManager : MonoBehaviour
             eventNotificationPanel.SetActive(false);
     }
 
+    void Update()
+    {
+        // ESC tuşuna basıldığında oyunu devam ettirerek Ana Menüye döner.
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            // NPC etkileşimi sırasında zaman durdurulduğu için (timeScale = 0) menüye dönerken zaman akışını normale çeker.
+            Time.timeScale = 1f;
+            UnityEngine.SceneManagement.SceneManager.LoadScene("MainMenu");
+        }
+    }
+
     public void ToggleMemoryPanel()
     {
         bool isActive = memoryPanel.activeSelf;
         memoryPanel.SetActive(!isActive);
     }
 
+    // Günlük etkileşim haklarını yeniler.
     public void ResetInteractions()
     {
         remainingInteractions = maxInteractions;
         Debug.Log($"Interaction rights reset: {remainingInteractions}");
     }
 
+    // NPC ile konuşma etkileşim menüsünü ekranda gösterir.
     public void ShowInteractionMenu(GameObject npc)
     {
+        // Günlük hak kalmamışsa uyarı yazısı gösterir ve menüyü açmaz.
         if (remainingInteractions <= 0)
         {
             Debug.Log("No interactions left! Wait for the next day.");
@@ -79,10 +96,11 @@ public class UIManager : MonoBehaviour
 
         currentNPC = npc;
         interactionPanel.SetActive(true);
-        Time.timeScale = 0f;
+        Time.timeScale = 0f; // Menü açıkken arka planda oyun zamanını durdurur.
         Debug.Log($"Menu opened: {npc.name} (Remaining: {remainingInteractions})");
     }
 
+    // Ekranda geçici uyarı yazısı gösteren coroutine
     IEnumerator ShowWarning(string message)
     {
         if (warningText == null) yield break;
@@ -90,6 +108,7 @@ public class UIManager : MonoBehaviour
         warningText.text = message;
         warningText.gameObject.SetActive(true);
 
+        // Oyun duraklatılmış olsa dahi gerçek saniye cinsinden bekler (Realtime)
         yield return new WaitForSecondsRealtime(4f);
 
         warningText.gameObject.SetActive(false);
@@ -98,11 +117,12 @@ public class UIManager : MonoBehaviour
     public void CloseInteractionMenu()
     {
         interactionPanel.SetActive(false);
-        Time.timeScale = 1f;
+        Time.timeScale = 1f; // Menü kapandığında zaman akışını normale döndürür.
         currentNPC = null;
         Debug.Log("Menu closed");
     }
 
+    // Etkileşim menüsündeki butonlara basıldığında (selamla, hediye ver vb.) tetiklenen fonksiyon.
     public void OnActionButton(string actionType)
     {
         if (currentNPC == null) return;
@@ -114,6 +134,7 @@ public class UIManager : MonoBehaviour
             return;
         }
 
+        // Görmezden gelme eylemi haricinde yapılan tüm etkileşimler hakkı 1 azaltır.
         if (actionType != "ignore")
         {
             remainingInteractions--;
@@ -123,6 +144,7 @@ public class UIManager : MonoBehaviour
         float impact = 0f;
         List<string> tags = new List<string>();
 
+        // Eylem türüne göre NPC üzerinde oluşacak duygusal etki katsayılarını ve etiketleri belirler.
         switch (actionType)
         {
             case "greet":
@@ -171,10 +193,12 @@ public class UIManager : MonoBehaviour
                 break;
         }
 
+        // Eylemi NPC'nin hafızasına (anısına) ekler.
         npc.AddMemory(actionType, impact, tags);
 
         Debug.Log($"{npc.npcName} disposition: {npc.GetDispositionLabel()} ({npc.GetOverallDisposition():F2})");
 
+        // Görev yöneticisini oyuncunun yaptığı eylemler hakkında bilgilendirir.
         if (QuestManager.Instance != null)
         {
             string npcShortName = npc.npcName.Contains("Ahmet") ? "Ahmet" :
@@ -196,18 +220,21 @@ public class UIManager : MonoBehaviour
             }
         }
 
+        // Kötü/zararlı bir eylem yapıldığında görev yöneticisine rapor eder.
         if (actionType == "shout" || actionType == "attack")
         {
             if (QuestManager.Instance != null)
                 QuestManager.Instance.OnBadAction();
         }
 
+        // Eylemin İngilizce açıklamasını yapay zeka girdisi olarak NPC'ye gönderir.
         string aiMessage = ActionToAIMessage(actionType);
         npc.InteractWithPlayer(aiMessage);
 
         CloseInteractionMenu();
     }
 
+    // Eylem türünü yapay zekaya uygun İngilizce durum cümlesine çevirir.
     private string ActionToAIMessage(string actionType)
     {
         switch (actionType)
@@ -222,6 +249,7 @@ public class UIManager : MonoBehaviour
         }
     }
 
+    // Ekranda beliren olay bildirimlerini (Örnek: "Mahallede büyük bir gürültü duyuldu!") sıraya ekleyen metot.
     public void ShowEventNotification(string message)
     {
         if (eventNotificationText == null)
@@ -232,12 +260,14 @@ public class UIManager : MonoBehaviour
 
         eventNotificationQueue.Enqueue(message);
 
+        // Eğer halihazırda gösterilen bir bildirim yoksa kuyruktan işlemeye başlar.
         if (!isDisplayingNotification)
         {
             eventNotificationCoroutine = StartCoroutine(ProcessNotificationQueue());
         }
     }
 
+    // Bildirim kuyruğunu sırayla işleyen döngüsel coroutine.
     private IEnumerator ProcessNotificationQueue()
     {
         isDisplayingNotification = true;
@@ -246,13 +276,14 @@ public class UIManager : MonoBehaviour
         {
             string nextMessage = eventNotificationQueue.Dequeue();
             yield return StartCoroutine(FadeNotificationRoutine(nextMessage));
-            yield return new WaitForSecondsRealtime(0.2f); // Short pause between notifications
+            yield return new WaitForSecondsRealtime(0.2f); // Bildirimler arası çok kısa bekleme süresi
         }
 
         isDisplayingNotification = false;
         eventNotificationCoroutine = null;
     }
 
+    // Bildirimin ekranda yavaşça belirip (fade-in), bekleyip, yavaşça kaybolmasını (fade-out) sağlayan animasyon coroutine'i.
     private IEnumerator FadeNotificationRoutine(string message)
     {
         eventNotificationText.gameObject.SetActive(true);
@@ -263,22 +294,22 @@ public class UIManager : MonoBehaviour
 
         Color originalColor = eventNotificationText.color;
         
-        // Fade In (0.5 seconds)
+        // Yavaşça Belirleme (Fade In - 0.5 saniye)
         float elapsed = 0f;
         float fadeDuration = 0.5f;
         while (elapsed < fadeDuration)
         {
-            elapsed += Time.unscaledDeltaTime;
+            elapsed += Time.unscaledDeltaTime; // Menüde zaman dursa bile çalışması için unscaledDeltaTime kullanılır.
             float alpha = Mathf.Clamp01(elapsed / fadeDuration);
             eventNotificationText.color = new Color(originalColor.r, originalColor.g, originalColor.b, alpha);
             yield return null;
         }
         eventNotificationText.color = new Color(originalColor.r, originalColor.g, originalColor.b, 1f);
 
-        // Stay on screen
+        // Belirli süre ekranda sabit tut
         yield return new WaitForSecondsRealtime(eventNotificationDuration);
 
-        // Fade Out (0.5 seconds)
+        // Yavaşça Kaybolma (Fade Out - 0.5 saniye)
         elapsed = 0f;
         while (elapsed < fadeDuration)
         {
