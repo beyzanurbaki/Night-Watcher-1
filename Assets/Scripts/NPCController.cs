@@ -162,7 +162,7 @@ public class NPCController : MonoBehaviour
             $"Your current mood: {GetDispositionLabel()}.\n" +
             $"Recent events: {memoryContext}.\n" +
             $"What happened: {playerMessage}\n" +
-            $"Respond as {npcName} would. ONLY 1 sentence, max 8 words. No explanations.";
+            $"Respond as {npcName} would. ONLY 1 sentence, max 5 words. No explanations.";
 
         Debug.Log($"<color=yellow>{npcName}</color> is thinking...");
 
@@ -171,7 +171,7 @@ public class NPCController : MonoBehaviour
         ollamaManager.SendMessageToNPC(modelId, finalPrompt, (reply) =>
         {
             isThinking = false;
-            // Cevabı 8 kelime ile sınırlandırır
+            // Cevabı 5 kelime ile sınırlandırır
             string shortReply = LimitReplyByWords(reply, 5);
 
             // Üretilen cevabı diyalog balonunda gösterir
