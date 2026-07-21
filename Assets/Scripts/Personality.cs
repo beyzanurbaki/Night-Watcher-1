@@ -23,7 +23,8 @@ public class Personality
     [Tooltip("Nevrotiklik")]
     [Range(0, 1)] public float neuroticism = 0.5f;
 
-    // Karakterin nevrotiklik (duygusal dengesizlik) düzeyine göre anının hafızada sönümlenme hızını hesaplar.
+    // Karakterin nevrotiklik (duygusal dengesizlik) ve uyumluluk (affetme eğilimi) düzeyine göre
+    // anının hafızada sönümlenme hızını hesaplar.
     public float GetDecayRate(float emotionalImpact)
     {
         float baseDecay = 0.05f;
@@ -32,7 +33,9 @@ public class Personality
         if (emotionalImpact < 0)
         {
             // Nevrotikliği yüksek olan karakterler olumsuz anıları daha zor unutur (sönümlenme hızı düşer).
-            return baseDecay * (1f - neuroticism * 0.8f);
+            // Uyumluluğu yüksek olan karakterler daha affedicidir; bu yalnızca olumsuz anıların
+            // sönümünü hızlandırır (olumlu anılarda uyumluluğun sönüm hızına etkisi yoktur).
+            return baseDecay * (1f - neuroticism * 0.8f) * (1f + agreeableness * 0.3f);
         }
         // Eğer olay olumlu bir etkiye sahipse
         else
