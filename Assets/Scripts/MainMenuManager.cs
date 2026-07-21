@@ -96,9 +96,9 @@ public class MainMenuManager : MonoBehaviour
         if (!PlayerPrefs.HasKey("NPC_Ahmet_Amca_openness"))
         {
             PlayerPrefs.SetFloat("NPC_Ahmet_Amca_openness", 0.3f);
-            PlayerPrefs.SetFloat("NPC_Ahmet_Amca_conscientiousness", 0.4f);
+            PlayerPrefs.SetFloat("NPC_Ahmet_Amca_conscientiousness", 0.7f);
             PlayerPrefs.SetFloat("NPC_Ahmet_Amca_extraversion", 0.2f);
-            PlayerPrefs.SetFloat("NPC_Ahmet_Amca_agreeableness", 0.3f);
+            PlayerPrefs.SetFloat("NPC_Ahmet_Amca_agreeableness", 0.4f);
             PlayerPrefs.SetFloat("NPC_Ahmet_Amca_neuroticism", 0.8f);
         }
 
@@ -106,20 +106,20 @@ public class MainMenuManager : MonoBehaviour
         if (!PlayerPrefs.HasKey("NPC_Ayse_Teyze_openness"))
         {
             PlayerPrefs.SetFloat("NPC_Ayse_Teyze_openness", 0.7f);
-            PlayerPrefs.SetFloat("NPC_Ayse_Teyze_conscientiousness", 0.6f);
+            PlayerPrefs.SetFloat("NPC_Ayse_Teyze_conscientiousness", 0.5f);
             PlayerPrefs.SetFloat("NPC_Ayse_Teyze_extraversion", 0.8f);
             PlayerPrefs.SetFloat("NPC_Ayse_Teyze_agreeableness", 0.9f);
-            PlayerPrefs.SetFloat("NPC_Ayse_Teyze_neuroticism", 0.3f);
+            PlayerPrefs.SetFloat("NPC_Ayse_Teyze_neuroticism", 0.2f);
         }
 
         // Mehmet Amca
         if (!PlayerPrefs.HasKey("NPC_Mehmet_Amca_openness"))
         {
             PlayerPrefs.SetFloat("NPC_Mehmet_Amca_openness", 0.5f);
-            PlayerPrefs.SetFloat("NPC_Mehmet_Amca_conscientiousness", 0.7f);
+            PlayerPrefs.SetFloat("NPC_Mehmet_Amca_conscientiousness", 0.8f);
             PlayerPrefs.SetFloat("NPC_Mehmet_Amca_extraversion", 0.5f);
-            PlayerPrefs.SetFloat("NPC_Mehmet_Amca_agreeableness", 0.6f);
-            PlayerPrefs.SetFloat("NPC_Mehmet_Amca_neuroticism", 0.4f);
+            PlayerPrefs.SetFloat("NPC_Mehmet_Amca_agreeableness", 0.5f);
+            PlayerPrefs.SetFloat("NPC_Mehmet_Amca_neuroticism", 0.3f);
         }
         PlayerPrefs.Save();
     }
@@ -485,22 +485,22 @@ public class MainMenuManager : MonoBehaviour
     {
         // Load actual PlayerPrefs
         tAhmetO = PlayerPrefs.GetFloat("NPC_Ahmet_Amca_openness", 0.3f);
-        tAhmetC = PlayerPrefs.GetFloat("NPC_Ahmet_Amca_conscientiousness", 0.4f);
+        tAhmetC = PlayerPrefs.GetFloat("NPC_Ahmet_Amca_conscientiousness", 0.7f);
         tAhmetE = PlayerPrefs.GetFloat("NPC_Ahmet_Amca_extraversion", 0.2f);
-        tAhmetA = PlayerPrefs.GetFloat("NPC_Ahmet_Amca_agreeableness", 0.3f);
+        tAhmetA = PlayerPrefs.GetFloat("NPC_Ahmet_Amca_agreeableness", 0.4f);
         tAhmetN = PlayerPrefs.GetFloat("NPC_Ahmet_Amca_neuroticism", 0.8f);
 
         tAyseO = PlayerPrefs.GetFloat("NPC_Ayse_Teyze_openness", 0.7f);
-        tAyseC = PlayerPrefs.GetFloat("NPC_Ayse_Teyze_conscientiousness", 0.6f);
+        tAyseC = PlayerPrefs.GetFloat("NPC_Ayse_Teyze_conscientiousness", 0.5f);
         tAyseE = PlayerPrefs.GetFloat("NPC_Ayse_Teyze_extraversion", 0.8f);
         tAyseA = PlayerPrefs.GetFloat("NPC_Ayse_Teyze_agreeableness", 0.9f);
-        tAyseN = PlayerPrefs.GetFloat("NPC_Ayse_Teyze_neuroticism", 0.3f);
+        tAyseN = PlayerPrefs.GetFloat("NPC_Ayse_Teyze_neuroticism", 0.2f);
 
         tMehmetO = PlayerPrefs.GetFloat("NPC_Mehmet_Amca_openness", 0.5f);
-        tMehmetC = PlayerPrefs.GetFloat("NPC_Mehmet_Amca_conscientiousness", 0.7f);
+        tMehmetC = PlayerPrefs.GetFloat("NPC_Mehmet_Amca_conscientiousness", 0.8f);
         tMehmetE = PlayerPrefs.GetFloat("NPC_Mehmet_Amca_extraversion", 0.5f);
-        tMehmetA = PlayerPrefs.GetFloat("NPC_Mehmet_Amca_agreeableness", 0.6f);
-        tMehmetN = PlayerPrefs.GetFloat("NPC_Mehmet_Amca_neuroticism", 0.4f);
+        tMehmetA = PlayerPrefs.GetFloat("NPC_Mehmet_Amca_agreeableness", 0.5f);
+        tMehmetN = PlayerPrefs.GetFloat("NPC_Mehmet_Amca_neuroticism", 0.3f);
 
         // Sync values to Slider components
         SetSliderVal(ahmetO, tAhmetO);
@@ -539,24 +539,24 @@ public class MainMenuManager : MonoBehaviour
 
         // Ahmet Amca değerleri
         PlayerPrefs.SetFloat("NPC_Ahmet_Amca_openness", ahmetO ? ahmetO.value : 0.3f);
-        PlayerPrefs.SetFloat("NPC_Ahmet_Amca_conscientiousness", ahmetC ? ahmetC.value : 0.4f);
+        PlayerPrefs.SetFloat("NPC_Ahmet_Amca_conscientiousness", ahmetC ? ahmetC.value : 0.7f);
         PlayerPrefs.SetFloat("NPC_Ahmet_Amca_extraversion", ahmetE ? ahmetE.value : 0.2f);
-        PlayerPrefs.SetFloat("NPC_Ahmet_Amca_agreeableness", ahmetA ? ahmetA.value : 0.3f);
+        PlayerPrefs.SetFloat("NPC_Ahmet_Amca_agreeableness", ahmetA ? ahmetA.value : 0.4f);
         PlayerPrefs.SetFloat("NPC_Ahmet_Amca_neuroticism", ahmetN ? ahmetN.value : 0.8f);
 
         // Ayse Teyze değerleri
         PlayerPrefs.SetFloat("NPC_Ayse_Teyze_openness", ayseO ? ayseO.value : 0.7f);
-        PlayerPrefs.SetFloat("NPC_Ayse_Teyze_conscientiousness", ayseC ? ayseC.value : 0.6f);
+        PlayerPrefs.SetFloat("NPC_Ayse_Teyze_conscientiousness", ayseC ? ayseC.value : 0.5f);
         PlayerPrefs.SetFloat("NPC_Ayse_Teyze_extraversion", ayseE ? ayseE.value : 0.8f);
         PlayerPrefs.SetFloat("NPC_Ayse_Teyze_agreeableness", ayseA ? ayseA.value : 0.9f);
-        PlayerPrefs.SetFloat("NPC_Ayse_Teyze_neuroticism", ayseN ? ayseN.value : 0.3f);
+        PlayerPrefs.SetFloat("NPC_Ayse_Teyze_neuroticism", ayseN ? ayseN.value : 0.2f);
 
         // Mehmet Amca değerleri
         PlayerPrefs.SetFloat("NPC_Mehmet_Amca_openness", mehmetO ? mehmetO.value : 0.5f);
-        PlayerPrefs.SetFloat("NPC_Mehmet_Amca_conscientiousness", mehmetC ? mehmetC.value : 0.7f);
+        PlayerPrefs.SetFloat("NPC_Mehmet_Amca_conscientiousness", mehmetC ? mehmetC.value : 0.8f);
         PlayerPrefs.SetFloat("NPC_Mehmet_Amca_extraversion", mehmetE ? mehmetE.value : 0.5f);
-        PlayerPrefs.SetFloat("NPC_Mehmet_Amca_agreeableness", mehmetA ? mehmetA.value : 0.6f);
-        PlayerPrefs.SetFloat("NPC_Mehmet_Amca_neuroticism", mehmetN ? mehmetN.value : 0.4f);
+        PlayerPrefs.SetFloat("NPC_Mehmet_Amca_agreeableness", mehmetA ? mehmetA.value : 0.5f);
+        PlayerPrefs.SetFloat("NPC_Mehmet_Amca_neuroticism", mehmetN ? mehmetN.value : 0.3f);
 
         PlayerPrefs.Save();
         Debug.Log("Saved updated OCEAN values to PlayerPrefs.");
@@ -594,24 +594,24 @@ public class MainMenuManager : MonoBehaviour
         float ahmetOVal = PlayerPrefs.GetFloat("NPC_Ahmet_Amca_openness", 0.3f);
         float ahmetNVal = PlayerPrefs.GetFloat("NPC_Ahmet_Amca_neuroticism", 0.8f);
         float ahmetEVal = PlayerPrefs.GetFloat("NPC_Ahmet_Amca_extraversion", 0.2f);
-        float ahmetCVal = PlayerPrefs.GetFloat("NPC_Ahmet_Amca_conscientiousness", 0.4f);
-        float ahmetAVal = PlayerPrefs.GetFloat("NPC_Ahmet_Amca_agreeableness", 0.3f);
+        float ahmetCVal = PlayerPrefs.GetFloat("NPC_Ahmet_Amca_conscientiousness", 0.7f);
+        float ahmetAVal = PlayerPrefs.GetFloat("NPC_Ahmet_Amca_agreeableness", 0.4f);
         string ahmetTrait = EvaluateTrait("Ahmet", ahmetOVal, ahmetCVal, ahmetEVal, ahmetAVal, ahmetNVal);
         ahmetLabel.text = $"[ Ahmet Amca:  <color=#ff6666>{ahmetTrait}</color> ]";
 
         float ayseOVal = PlayerPrefs.GetFloat("NPC_Ayse_Teyze_openness", 0.7f);
-        float ayseNVal = PlayerPrefs.GetFloat("NPC_Ayse_Teyze_neuroticism", 0.3f);
+        float ayseNVal = PlayerPrefs.GetFloat("NPC_Ayse_Teyze_neuroticism", 0.2f);
         float ayseEVal = PlayerPrefs.GetFloat("NPC_Ayse_Teyze_extraversion", 0.8f);
-        float ayseCVal = PlayerPrefs.GetFloat("NPC_Ayse_Teyze_conscientiousness", 0.6f);
+        float ayseCVal = PlayerPrefs.GetFloat("NPC_Ayse_Teyze_conscientiousness", 0.5f);
         float ayseAVal = PlayerPrefs.GetFloat("NPC_Ayse_Teyze_agreeableness", 0.9f);
         string ayseTrait = EvaluateTrait("Ayse", ayseOVal, ayseCVal, ayseEVal, ayseAVal, ayseNVal);
         ayseLabel.text = $"[ Ayşe Teyze:  <color=#66ff66>{ayseTrait}</color> ]";
 
         float mehmetOVal = PlayerPrefs.GetFloat("NPC_Mehmet_Amca_openness", 0.5f);
-        float mehmetNVal = PlayerPrefs.GetFloat("NPC_Mehmet_Amca_neuroticism", 0.4f);
+        float mehmetNVal = PlayerPrefs.GetFloat("NPC_Mehmet_Amca_neuroticism", 0.3f);
         float mehmetEVal = PlayerPrefs.GetFloat("NPC_Mehmet_Amca_extraversion", 0.5f);
-        float mehmetCVal = PlayerPrefs.GetFloat("NPC_Mehmet_Amca_conscientiousness", 0.7f);
-        float mehmetAVal = PlayerPrefs.GetFloat("NPC_Mehmet_Amca_agreeableness", 0.6f);
+        float mehmetCVal = PlayerPrefs.GetFloat("NPC_Mehmet_Amca_conscientiousness", 0.8f);
+        float mehmetAVal = PlayerPrefs.GetFloat("NPC_Mehmet_Amca_agreeableness", 0.5f);
         string mehmetTrait = EvaluateTrait("Mehmet", mehmetOVal, mehmetCVal, mehmetEVal, mehmetAVal, mehmetNVal);
         mehmetLabel.text = $"[ Mehmet Amca:  <color=#ffff66>{mehmetTrait}</color> ]";
     }

@@ -172,7 +172,7 @@ public class NPCController : MonoBehaviour
         {
             isThinking = false;
             // Cevabı 8 kelime ile sınırlandırır
-            string shortReply = LimitReplyByWords(reply, 8);
+            string shortReply = LimitReplyByWords(reply, 5);
 
             // Üretilen cevabı diyalog balonunda gösterir
             if (dialogueManager != null)
@@ -183,7 +183,7 @@ public class NPCController : MonoBehaviour
     }
 
     // Gelen cevabı kelime sınırına göre kırpan yardımcı fonksiyon
-    private string LimitReplyByWords(string reply, int maxWords = 8)
+    private string LimitReplyByWords(string reply, int maxWords = 5)
     {
         if (string.IsNullOrWhiteSpace(reply))
             return "";
@@ -254,7 +254,7 @@ public class NPCController : MonoBehaviour
             $"- Neuroticism: {personality.neuroticism:F2}\n" +
             $"Adjust your tone and replies to reflect these traits (e.g., higher Agreeableness makes you nicer, higher Neuroticism makes you more anxious or grumpier).";
 
-        string rules = "\nRules: Reply only in English. One short sentence. Maximum 8 words. React to events (like noises, park sounds, or darkness) naturally based on your personality, do not blindly repeat template greetings.";
+        string rules = "\nRules: Reply only in English. One short sentence. Maximum 5 words. React to events (like noises, park sounds, or darkness) naturally based on your personality, do not blindly repeat template greetings.";
 
         return basePrompt + personalityPrompt + rules;
     }
@@ -278,16 +278,29 @@ public class NPCController : MonoBehaviour
 
         Debug.Log($"{npcName} received trigger: {triggerType} ({impact:F2})");
 
-        // Konuşma bekleme süresi (cooldown) kontrolüyle rastgele bir konuşma tepkisi oluşturur.
+        // Konuşma bekleme süresi (cooldown) kontrolüyle sözel tepki verilip verilmeyeceğini belirler.
         if (Time.time - lastSpeechTime >= speechCooldown)
         {
-            if (UnityEngine.Random.value < 0.4f)
+            if (ShouldReactVerbally(impact))
             {
                 lastSpeechTime = Time.time + 2.0f; // Eşzamanlı spam tetiklemeleri önlemek için geçici tampon
                 string triggerMessage = TriggerToAIMessage(triggerType);
                 StartCoroutine(StaggeredSpeechRoutine(triggerMessage));
             }
         }
+    }
+
+    // Sözel tepki kapısı: Mehmet (Sorumluluk/Conscientiousness eksenli, deterministik eşik) için
+    // yalnızca duygusal etki (ΔE) kişiliğe bağlı eşiği (θ) aşarsa konuşur; diğer NPC'ler stokastik (%40) tepki verir.
+    private bool ShouldReactVerbally(float impact)
+    {
+        if (npcName.Contains("Mehmet"))
+        {
+            float theta = 0.1f + personality.conscientiousness * 0.15f;
+            return Mathf.Abs(impact) >= theta;
+        }
+
+        return UnityEngine.Random.value < 0.4f;
     }
 
     // Karakterlerin tepkilerinin üst üste binmemesi için rastgele bir gecikmeyle diyalog başlatır.
