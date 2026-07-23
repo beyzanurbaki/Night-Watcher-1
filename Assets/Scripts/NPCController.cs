@@ -155,6 +155,9 @@ public class NPCController : MonoBehaviour
 
         // Karakterin en güçlü anılarını alarak modele bağlam (context) olarak verir.
         string memoryContext = GetMemoryContextForAI();
+        // Performans ölçümü için bellek durumu etiketi — elle takip gerekmesin diye
+        // GetMemoryContextForAI ile aynı filtreden (|strength|>0.1, en çok 3) türetiliyor.
+        string memoryCondition = GetMemoryConditionTag();
 
         // Yapay zekaya gönderilecek son komut setini (Prompt) birleştirir.
         string finalPrompt =
@@ -172,14 +175,29 @@ public class NPCController : MonoBehaviour
         {
             isThinking = false;
             // Cevabı 5 kelime ile sınırlandırır
+            var wordLimitSw = System.Diagnostics.Stopwatch.StartNew();
             string shortReply = LimitReplyByWords(reply, 5);
+            wordLimitSw.Stop();
+            // Ayrı satır: OllamaManager'daki DeserializeBlock ile toplanmaz (madde 2 kod incelemesinde
+            // netleşti — ikisi bitişik segment değil, aralarında onReply callback sınırı var).
+            PerfLogger.Log("WordLimitBlock", npcName, wordLimitSw.Elapsed.TotalMilliseconds, condition: memoryCondition);
 
             // Üretilen cevabı diyalog balonunda gösterir
             if (dialogueManager != null)
                 dialogueManager.ShowMessage(shortReply);
 
             Debug.Log($"<color=cyan>{npcName}</color>: {shortReply}");
-        }, aiTemperature);
+        }, aiTemperature, memoryCondition);
+    }
+
+    // Performans ölçümü koşulunu ("boş bellek" / "3 anı dolu") otomatik belirler —
+    // GetMemoryContextForAI() ile aynı eşiği kullanır, elle etiketleme/sayım gerektirmez.
+    private string GetMemoryConditionTag()
+    {
+        int strongCount = memories.Count(m => Mathf.Abs(m.GetStrength()) > 0.1f);
+        if (strongCount == 0) return "empty";
+        if (strongCount >= 3) return "full";
+        return "partial"; // protokol dışı ara durum — analizde ayrı görünür, karışmaz
     }
 
     // Gelen cevabı kelime sınırına göre kırpan yardımcı fonksiyon
