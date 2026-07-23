@@ -17,6 +17,7 @@ public class FrameTimeTracker : MonoBehaviour
     [SerializeField] private int bufferCapacity = 20000;
     [SerializeField] private int warmupFrames = 60; // sahne yüklendikten sonraki ilk N kare analiz dışı (madde 0)
     [SerializeField] private KeyCode flushKey = KeyCode.F9; // koşum bitince CSV'ye yaz
+    [SerializeField] private KeyCode clearMemoriesKey = KeyCode.F11; // "boş bellek" koşulunu anında tekrar test edilebilir yapar
     [SerializeField] private OllamaManager ollamaManager;
 
     private float[] deltaBuffer;
@@ -50,6 +51,13 @@ public class FrameTimeTracker : MonoBehaviour
             PerfLogger.Flush();
         }
 
+        if (Input.GetKeyDown(clearMemoriesKey))
+        {
+            var npcs = FindObjectsByType<NPCController>(FindObjectsSortMode.None);
+            foreach (var npc in npcs)
+                npc.ClearMemoriesForBenchmark();
+        }
+
         frameCount++;
         if (frameCount <= warmupFrames)
             return;
@@ -78,8 +86,15 @@ public class FrameTimeTracker : MonoBehaviour
     private void OnGUI()
     {
         string summary = PerfLogger.GetProgressSummary();
-        GUI.Box(new Rect(10, 10, 320, 20 + 18 * (summary.Split('\n').Length)), "");
-        GUI.Label(new Rect(20, 15, 300, 300), $"Perf ölçüm ilerlemesi ({flushKey} = kaydet):\n{summary}");
+        string benchmarkState = "bilinmiyor (UIManager yok)";
+        if (UIManager.Instance != null)
+            benchmarkState = UIManager.Instance.unlimitedInteractionsForBenchmark ? "AÇIK" : "KAPALI (F10 ile aç)";
+
+        GUI.Box(new Rect(10, 10, 340, 60 + 18 * (summary.Split('\n').Length)), "");
+        GUI.Label(new Rect(20, 15, 320, 320),
+            $"Benchmark modu: {benchmarkState}\n" +
+            $"{flushKey} = kaydet   |   {clearMemoriesKey} = tüm bellekleri temizle (boş koşul için)\n" +
+            $"Perf ölçüm ilerlemesi:\n{summary}");
     }
 
     // Ölçüm koşumu bitince manuel çağır (varsayılan: F9 tuşu). Tek seferde, tek dosya yazımı.

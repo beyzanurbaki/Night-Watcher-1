@@ -200,6 +200,15 @@ public class NPCController : MonoBehaviour
         return "partial"; // protokol dışı ara durum — analizde ayrı görünür, karışmaz
     }
 
+    // Performans ölçümü içindir: "boş bellek" koşulunu doğal sönümlemeyi (~40-90 sn) beklemeden
+    // tekrar test edebilmek için belleği anında temizler. Normal oynanışta hiç çağrılmaz.
+    public void ClearMemoriesForBenchmark()
+    {
+        int count = memories.Count;
+        memories.Clear();
+        Debug.Log($"<color=magenta>Benchmark:</color> {npcName} belleği temizlendi ({count} anı silindi).");
+    }
+
     // Gelen cevabı kelime sınırına göre kırpan yardımcı fonksiyon
     private string LimitReplyByWords(string reply, int maxWords = 5)
     {

@@ -20,6 +20,11 @@ public class UIManager : MonoBehaviour
     public int maxInteractions = 2;       // Bir günde kullanılabilecek maksimum etkileşim sayısı
     public int remainingInteractions = 2; // Kalan günlük etkileşim hakkı
 
+    // Performans ölçümü içindir — açıkken günlük etkileşim hakkı kontrol edilmez.
+    // Varsayılan kapalı: normal oyun dengesine dokunmaz. F10 ile runtime'da açılıp kapanır,
+    // Inspector'dan elle ayarlanması gerekmez (bkz. FrameTimeTracker ekranındaki durum yazısı).
+    public bool unlimitedInteractionsForBenchmark = false;
+
     [Header("Warning")]
     public TextMeshProUGUI warningText;
 
@@ -68,6 +73,13 @@ public class UIManager : MonoBehaviour
             Time.timeScale = 1f;
             UnityEngine.SceneManagement.SceneManager.LoadScene("MainMenu");
         }
+
+        // Performans ölçüm modunu aç/kapat (madde: günlük etkileşim hakkı limiti ölçüm için kaldırılır).
+        if (Input.GetKeyDown(KeyCode.F10))
+        {
+            unlimitedInteractionsForBenchmark = !unlimitedInteractionsForBenchmark;
+            Debug.Log($"<color=magenta>Benchmark modu:</color> {(unlimitedInteractionsForBenchmark ? "AÇIK" : "KAPALI")}");
+        }
     }
 
     public void ToggleMemoryPanel()
@@ -87,7 +99,7 @@ public class UIManager : MonoBehaviour
     public void ShowInteractionMenu(GameObject npc)
     {
         // Günlük hak kalmamışsa uyarı yazısı gösterir ve menüyü açmaz.
-        if (remainingInteractions <= 0)
+        if (!unlimitedInteractionsForBenchmark && remainingInteractions <= 0)
         {
             Debug.Log("No interactions left! Wait for the next day.");
             StartCoroutine(ShowWarning("No interactions left! Wait for the next day."));
@@ -135,7 +147,7 @@ public class UIManager : MonoBehaviour
         }
 
         // Görmezden gelme eylemi haricinde yapılan tüm etkileşimler hakkı 1 azaltır.
-        if (actionType != "ignore")
+        if (actionType != "ignore" && !unlimitedInteractionsForBenchmark)
         {
             remainingInteractions--;
             Debug.Log($"Interaction used. Remaining: {remainingInteractions}");
