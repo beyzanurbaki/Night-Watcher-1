@@ -90,8 +90,8 @@ public class FrameTimeTracker : MonoBehaviour
         if (UIManager.Instance != null)
             benchmarkState = UIManager.Instance.unlimitedInteractionsForBenchmark ? "AÇIK" : "KAPALI (F10 ile aç)";
 
-        GUI.Box(new Rect(10, 10, 340, 60 + 18 * (summary.Split('\n').Length)), "");
-        GUI.Label(new Rect(20, 15, 320, 320),
+        GUI.Box(new Rect(1000, 970, 340, 60 + 18 * (summary.Split('\n').Length)), "");
+        GUI.Label(new Rect(1010, 975, 320, 320),
             $"Benchmark modu: {benchmarkState}\n" +
             $"{flushKey} = kaydet   |   {clearMemoriesKey} = tüm bellekleri temizle (boş koşul için)\n" +
             $"Perf ölçüm ilerlemesi:\n{summary}");
